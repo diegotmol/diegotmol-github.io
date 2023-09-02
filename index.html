@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+    <title>Gestión de Pagos de Alquileres</title>
+    <style>
+        /* Estilos Globales */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7f7f7;
+            display: flex;|
+            flex-direction: row;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #333;
+            color: white;
+            padding: 1em;
+            display: none;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%;
+            overflow-x: hidden;
+            transition: 0.3s;
+        }
+        .sidebar.active {
+            display: flex;
+        }
+        .content {
+            flex: 1;
+            padding: 2em;
+            margin-top: 2em;
+            transition: margin-left 0.3s, padding-left 0.3s;
+            margin-left: 0;
+            padding-left: 50px;
+        }
+        .header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 0.5em;
+            font-size: 18px;
+        }
+        .btn-menu {
+            background-color: #333;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: fixed;
+            top: 1em;
+            right: 1em;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-menu::before {
+            content: '\2261';
+            font-size: 30px;
+            display: inline-block;
+        }
+        .btn-menu:hover {
+            background-color: #555;
+        }
+        .sidebar-title {
+            font-size: 1.2em;
+            margin-bottom: 1em;
+        }
+        .sidebar-button {
+            background-color: #336699;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-bottom: 0.5em;
+            transition: background-color 0.3s;
+            font-size: 15px;
+        }
+        .sidebar-button:last-child {
+            margin-bottom: 0;
+        }
+        .sidebar-button:hover {
+            background-color: #5588bb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .paid {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .not-paid {
+            color: #c0392b;
+            font-weight: bold;
+        }
+        .menu-expanded {
+            margin-left: 250px;
+        }
+        .month-select {
+            margin-bottom: 1em;
+        }
+
+        /* Estilos para el formulario de agregar inquilino */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+                .overlay2 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        /* Estilos para la ventana emergente */
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 2;
+        }
+
+  .totals {
+            margin-top: 1em;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .totals table {
+            margin: 0;
+            padding: 0;
+            display: inline-table;
+        }
+
+        .totals td {
+            padding: 5px 10px;
+            font-weight: bold;
+            border-bottom: none;
+            text-align: right;
+        }
+
+        .totals-row td {
+            padding: 5px 10px;
+            font-weight: bold;
+            border-bottom: none;
+            text-align: center;
+        }
+
+    </style>
+</head>
+<body>
+    <button class="btn-menu"></button>
+    <div class="sidebar">
+        <div class="sidebar-title">Menú</div>
+        <button class="sidebar-button">Ver Pagos</button>
+        <button class="sidebar-button" id="add-inquilino-btn">Añadir Inquilinos</button>
+    </div>
+    <div class="content">
+        <div class="header">
+            <h1>Gestión de Pagos de Alquileres</h1>
+        </div>
+        <p>Conecta tu cuenta de Gmail para sincronizar los pagos de alquileres.</p>
+        <button class="btn-sync">Sincronizar Correos</button>
+        <p>Última sincronización: 10 de agosto de 2023</p>
+
+        <div class="month-select">
+            <label for="month">Seleccionar Mes:</label>
+            <select id="month">
+                <option value="enero-2023">Enero 2023</option>
+                <option value="febrero-2023">Febrero 2023</option>
+                <option value="marzo-2023">Marzo 2023</option>
+                <option value="abril-2023">Abril 2023</option>
+                <option value="mayo-2023">Mayo 2023</option>
+                <option value="junio-2023">Junio 2023</option>
+                <option value="julio-2023">Julio 2023</option>
+                <option value="agosto-2023">Agosto 2023</option>
+                <option value="septiembre-2023">Septiembre 2023</option>
+                <option value="octubre-2023">Octubre 2023</option>
+                <option value="noviembre-2023">Noviembre 2023</option>
+                <option value="diciembre-2023">Diciembre 2023</option>
+            </select>
+        </div>
+
+        <table id="data-table">
+            <tr>
+                <th>Propietario</th>
+                <th>Propiedad</th>
+                <th>Número de Teléfono</th>
+                <th>Monto a Pagar</th>
+                <th>Estado de pago</th>
+                <th>Acciones</th>
+            </tr>
+            <tr class="paid">
+                <td>Juan Pérez</td>
+                <td>Casa en Santiago</td>
+                <td>+56 9 12345678</td>
+                <td>$800</td>
+                <td class="payment-status"></td>
+                <td>
+                    <button class="delete-button">Eliminar</button>
+                    <button class="edit-button">Editar</button>
+                </td>
+            </tr>
+            <tr class="not-paid">
+                <td>Maria Gómez</td>
+                <td>Departamento en Valparaíso</td>
+                <td>+56 9 98765432</td>
+                <td>$650</td>
+                <td class="payment-status"></td>
+                <td>
+                    <button class="delete-button">Eliminar</button>
+                    <button class="edit-button">Editar</button>
+                </td>
+            </tr>
+            <tr class="paid">
+                <td>Carlos López</td>
+                <td>Oficina en Concepción</td>
+                <td>+56 9 55555555</td>
+                <td>$1200</td>
+                <td class="payment-status"></td>
+                <td>
+                    <button class="delete-button">Eliminar</button>
+                    <button class="edit-button">Editar</button>
+                </td>
+            </tr>
+            <tr class="paid">
+                <td>Ana Rodríguez</td>
+                <td>Departamento en Santiago</td>
+                <td>+56 9 87654321</td>
+                <td>$750</td>
+                <td class="payment-status"></td>
+                <td>
+                    <button class="delete-button">Eliminar</button>
+                    <button class="edit-button">Editar</button>
+                </td>
+            </tr>
+            <tr class="not-paid">
+                <td>Luis Martínez</td>
+                <td>Casa en Valparaíso</td>
+                <td>+56 9 11112222</td>
+                <td>$900</td>
+                <td class="payment-status"></td>
+                <td>
+                    <button class="delete-button">Eliminar</button>
+                    <button class="edit-button">Editar</button>
+                </td>
+            </tr>
+        </table>
+        <table id="totals-table">
+            <tr class="totals" id="totals">
+                <td>   </td>
+                <td>Total: <span id="total">$0.00</span></td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+
+                <td>Total Pagado: <span id="total-pagado">$0.00</span></td>
+                <td> </td>
+                <td> </td>
+                <td> </td>
+                <td>Total No Pagado: <span id="total-no-pagado">$0.00</span></td>
+                <!-- ... (posibles nuevas celdas de totales) ... -->
+                <td> </td>
+                <td> </td>
+                <td> </td>
+    </tr>
+</table>
+
+
+</div>
+
+    <div class="overlay" id="overlay">
+        <div class="form-container">
+            <h2>Añadir Inquilino</h2>
+             <form id="add-inquilino-form">
+    <label for="nombre">Nombre:</label>
+    <input type="text" id="nombre" name="nombre" required><br><br>
+    <label for="propiedad">Propiedad:</label>
+    <input type="text" id="propiedad" name="propiedad" required><br><br>
+    <label for="telefono">Número de Teléfono:</label>
+    <input type="text" id="telefono" name="telefono" required><br><br>
+    <label for="monto">Monto a Pagar:</label>
+    <input type="text" id="monto" name="monto" required><br><br>
+    <input type="submit" value="Agregar">
+    <button type="button" id="cancel-button">Cancelar</button> <!-- Agregar este botón -->
+             </form>
+        </div>
+    </div>
+ <div class="overlay2" id="overlay2">
+        <div class="form-container">
+            <h2>Editar inquilino</h2>
+            <form id="edit-inquilino-form">
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="edit-nombre" name="nombre" required><br><br>
+                <label for="propiedad">Propiedad:</label>
+                <input type="text" id="edit-propiedad" name="propiedad" required><br><br>
+                <label for="telefono">Número de Teléfono:</label>
+                <input type="text" id="edit-telefono" name="telefono" required><br><br>
+                <label for="monto">Monto a Pagar:</label>
+                <input type="text" id="edit-monto" name="monto" required><br><br>
+                <input type="submit" value="Actualizar">
+                <button type="button" id="cancel-button2">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+
+<script>
+ let originalPayments = [];
+  let paymentStates = {};
+  const btnMenu = document.querySelector('.btn-menu');
+  const sidebar = document.querySelector('.sidebar');
+  const content = document.querySelector('.content');
+  const addInquilinoBtn = document.getElementById('add-inquilino-btn');
+  const overlay = document.getElementById('overlay');
+  const addInquilinoForm = document.getElementById('add-inquilino-form');
+  const editInquilinoForm = document.getElementById('edit-inquilino-form');
+  const monthSelect = document.getElementById('month');
+  const paymentStatusCells = document.querySelectorAll('.payment-status');
+  const montoCells = document.querySelectorAll('td:nth-child(4)');
+  const deleteButtons = document.querySelectorAll('.delete-button');
+  const editButtons = document.querySelectorAll('.edit-button');
+  const totalsRow = document.querySelector('.totals-row');
+
+  const totalElement = document.getElementById('total');
+  const totalPagadoElement = document.getElementById('total-pagado');
+  const totalNoPagadoElement = document.getElementById('total-no-pagado');
+
+  // Función para calcular y actualizar los totales por mes
+  function updateTotals() {
+    let total = 0;
+    let totalPagado = 0;
+    let totalNoPagado = 0;
+
+    const montoCells = document.querySelectorAll('#data-table .paid td:nth-child(4), #data-table .not-paid td:nth-child(4)');
+    const paymentStatusCells = document.querySelectorAll('#data-table .paid .payment-status, #data-table .not-paid .payment-status');
+
+    montoCells.forEach((cell, index) => {
+      const monto = parseFloat(cell.textContent.substring(1)); // Elimina el signo $
+      const estadoPago = paymentStatusCells[index].textContent.trim();
+
+      total += monto;
+      if (estadoPago === 'Pagado') {
+        totalPagado += monto;
+      } else {
+        totalNoPagado += monto;
+      }
+    });
+
+    totalElement.textContent = `$${total.toFixed(0)}`;
+    totalPagadoElement.textContent = `$${totalPagado.toFixed(0)}`;
+    totalNoPagadoElement.textContent = `$${totalNoPagado.toFixed(0)}`;
+  }
+
+    // Función para generar un estado de pago aleatorio
+  function generateRandomPaymentStatus() {
+    return Math.random() < 0.5 ? 'Pagado' : 'No pagado';
+  }
+
+  // Generar estados de pago aleatorios al cargar la página
+  paymentStatusCells.forEach(cell => {
+    cell.textContent = generateRandomPaymentStatus();
+    cell.parentElement.className = cell.textContent === 'Pagado' ? 'paid' : 'not-paid';
+  });
+
+  btnMenu.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    content.classList.toggle('menu-expanded');
+  });
+
+  addInquilinoBtn.addEventListener('click', () => {
+    overlay.style.display = 'flex';
+  });
+
+  addInquilinoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const nombre = document.getElementById('nombre').value;
+    const propiedad = document.getElementById('propiedad').value;
+    const telefono = document.getElementById('telefono').value;
+    const monto = document.getElementById('monto').value;
+
+    const newRow = document.createElement('tr');
+    newRow.className = monthSelect.value === 'enero-2023' ? 'paid' : 'not-paid';
+    newRow.innerHTML = `
+      <td>${nombre}</td>
+      <td>${propiedad}</td>
+      <td>${telefono}</td>
+      <td>$${monto}</td>
+      <td class="payment-status">${generateRandomPaymentStatus()}</td>
+      <td>
+        <button class="delete-button">Eliminar</button>
+        <button class="edit-button">Editar</button>
+      </td>
+    `;
+
+    const table = document.querySelector('table');
+    table.appendChild(newRow);
+
+    overlay.style.display = 'none';
+    updateTotals();
+  });
+
+    monthSelect.addEventListener('change', () => {
+    const selectedMonth = monthSelect.value;
+
+    if (!(selectedMonth in paymentStates)) {
+      paymentStates[selectedMonth] = generateRandomPaymentStatus();
+    }
+
+    paymentStatusCells.forEach((cell, index) => {
+      const stateKey = selectedMonth + index;
+
+      if (!(stateKey in paymentStates)) {
+        paymentStates[stateKey] = generateRandomPaymentStatus();
+      }
+
+      cell.textContent = paymentStates[stateKey];
+      cell.parentElement.className = cell.textContent === 'Pagado' ? 'paid' : 'not-paid';
+    });
+
+    updateTotals();
+  });
+
+  // Event listener para los botones de eliminar y editar en la tabla
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const row = button.parentElement.parentElement;
+      row.remove();
+      updateTotals();
+    });
+  });
+
+  editButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      const row = button.parentElement.parentElement;
+      editRow(row);
+    });
+  });
+
+    function editRow(row) {
+    const cells = row.querySelectorAll('td');
+
+    document.getElementById('edit-nombre').value = cells[0].textContent;
+    document.getElementById('edit-propiedad').value = cells[1].textContent;
+    document.getElementById('edit-telefono').value = cells[2].textContent;
+    document.getElementById('edit-monto').value = cells[3].textContent.slice(1);
+
+    const overlay2 = document.querySelector('.overlay2');
+    overlay2.style.display = 'flex';
+
+    const editInquilinoForm = document.getElementById('edit-inquilino-form');
+
+    editInquilinoForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      cells[0].textContent = document.getElementById('edit-nombre').value;
+      cells[1].textContent = document.getElementById('edit-propiedad').value;
+      cells[2].textContent = document.getElementById('edit-telefono').value;
+      cells[3].textContent = `$${document.getElementById('edit-monto').value}`;
+      //cells[4].textContent = generateRandomPaymentStatus(); // Eliminar esta línea
+      //cells[4].parentElement.className = cells[4].textContent === 'Pagado' ? 'paid' : 'not-paid'; // Eliminar esta línea
+
+      overlay2.style.display = 'none';
+      //updateTotals(); // Eliminar esta llamada a la función
+    });
+
+    const cancelButton2 = document.getElementById('cancel-button2');
+    cancelButton2.addEventListener('click', (e) => {
+      e.preventDefault();
+      overlay2.style.display = 'none';
+    });
+  }
+
+  document.querySelector('#data-table').addEventListener('click', (event) => {
+    const clickedElement = event.target;
+
+    if (clickedElement.classList.contains('edit-button')) {
+      const row = clickedElement.parentElement.parentElement;
+      editRow(row);
+    }
+  });
+
+  // Obtener el valor del estado de pago
+  //const estadoPago = cells[4].textContent.trim();
+
+  // Actualizar los totales considerando los cambios en la fila editada
+  //const monto = parseFloat(cells[3].textContent.substring(1));
+  //if (estadoPago === 'Pagado') {
+  //    totalPagadoElement.textContent = `$${(parseFloat(totalPagadoElement.textContent.substring(1)) - monto).toFixed(2)}`;
+  //} else {
+  //   totalNoPagadoElement.textContent = `$${(parseFloat(totalNoPagadoElement.textContent.substring(1)) - monto).toFixed(2)}`;
+  //}
+
+  // Eliminar la fila después de actualizar los totales
+
+  // Event listener para el botón "Cancelar" del formulario
+
+  const cancelButton = document.getElementById('cancel-button');
+  cancelButton.addEventListener('click', (e) => {
+    e.preventDefault(); // Evitar que el formulario se envíe al hacer clic en "Cancelar"
+    overlay.style.display = 'none';
+  });
+  const cancelButton2 = document.getElementById('cancel-button2');
+  cancelButton2.addEventListener('click', (e) => {
+    e.preventDefault(); // Evitar que el formulario se envíe al hacer clic en "Cancelar"
+    overlay2.style.display = 'none';
+  });
+  updateTotals();
+
+</script>
+
+
+
+
+
+</body>
+</html>

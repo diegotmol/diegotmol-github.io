@@ -187,7 +187,9 @@
             border-bottom: none;
             text-align: center;
         }
-
+.not-paid {
+        color: #c0392b;
+    }
     </style>
 </head>
 <body>
@@ -417,7 +419,7 @@
     overlay.style.display = 'flex';
   });
 
-  addInquilinoForm.addEventListener('submit', (e) => {
+addInquilinoForm.addEventListener('submit', (e) => {
     e.preventDefault();
 
     const nombre = document.getElementById('nombre').value;
@@ -425,26 +427,37 @@
     const telefono = document.getElementById('telefono').value;
     const monto = document.getElementById('monto').value;
 
+    // Establecer el estado de pago como "No pagado"
+    const estadoPago = "No pagado";
+
     const newRow = document.createElement('tr');
-    newRow.className = monthSelect.value === 'enero-2023' ? 'paid' : 'not-paid';
+    newRow.className = 'not-paid'; // Establecer siempre como "No pagado"
     newRow.innerHTML = `
-      <td>${nombre}</td>
-      <td>${propiedad}</td>
-      <td>${telefono}</td>
-      <td>$${monto}</td>
-      <td class="payment-status">${generateRandomPaymentStatus()}</td>
-      <td>
-        <button class="delete-button">Eliminar</button>
-        <button class="edit-button">Editar</button>
-      </td>
+        <td>${nombre}</td>
+        <td>${propiedad}</td>
+        <td>${telefono}</td>
+        <td>$${monto}</td>
+        <td class="payment-status">${estadoPago}</td>
+        <td>
+            <button class="delete-button">Eliminar</button>
+            <button class="edit-button">Editar</button>
+        </td>
     `;
 
     const table = document.querySelector('table');
     table.appendChild(newRow);
 
+    // Agregar evento clic para el botón "Eliminar" en la nueva fila
+    const deleteButton = newRow.querySelector('.delete-button');
+    deleteButton.addEventListener('click', () => {
+        newRow.remove();
+        updateTotals();
+    });
+
     overlay.style.display = 'none';
     updateTotals();
-  });
+});
+
 
     monthSelect.addEventListener('change', () => {
     const selectedMonth = monthSelect.value;
